@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FMS | Functional Monitoring System</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--bg:#f3f6fa;--panel:#fff;--ink:#14263d;--muted:#66788d;--line:#e3e9f0;--soft:#edf3fa;--nav:#102a43;--blue:#2476d2;--teal:#0f9d91;--orange:#e08a1e;--red:#d9534f;--ok:#0b8a72;--okbg:#e3f6f0;--warnbg:#fff3df;--badbg:#fdeceb;--shadow:0 1px 2px #102a4310,0 8px 24px #102a4308;--grid:#e9eef4;--tick:#7b8b9d}
+:root[data-theme=dark]{--bg:#0b1623;--panel:#12263a;--ink:#e7eef6;--muted:#93a6ba;--line:#223d55;--soft:#1a3550;--nav:#08141f;--okbg:#0f3a35;--warnbg:#3b2e14;--badbg:#3d1f21;--shadow:none;--grid:#1f3a52;--tick:#8aa0b5;--ok:#35d0b2}
+*{box-sizing:border-box}html{scroll-padding-top:90px}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;border-radius:10px;padding:9px 14px;font-weight:650;transition:background .15s,transform .1s}
+button:active{transform:scale(.98)}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.primary{background:var(--blue);color:#fff}.primary:hover{background:#1c63b3}
+.ghost{background:var(--soft);color:var(--blue)}.ghost:hover{filter:brightness(.96)}
+.app{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
+.sidebar{background:var(--nav);color:#fff;padding:24px 14px;display:flex;flex-direction:column;gap:26px;position:sticky;top:0;height:100vh}
+.brand{display:flex;gap:11px;align-items:center;padding:0 10px}
+.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#38bdf8,#0f9d91);display:grid;place-items:center;font-weight:900}
+.brand strong{font-size:17px;letter-spacing:.06em}.brand small{display:block;color:#9fb3c8;font-size:11px}
+.nav{display:grid;gap:6px}
+.nav button{display:flex;gap:12px;align-items:center;text-align:left;color:#c7d5e4;background:transparent;padding:11px 12px;border-radius:11px}
+.nav button:hover{background:#1b3a52;color:#fff}.nav button.active{background:#2a4f6d;color:#fff;box-shadow:inset 3px 0 0 #38bdf8}
+.nav .ico{width:22px;text-align:center;font-size:17px}
+.sidefoot{margin-top:auto;padding:14px 10px 0;color:#8ba3bb;font-size:11px;border-top:1px solid #23415a}
+main{min-width:0;padding:0 clamp(16px,3vw,38px) 40px}
+.topbar{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;gap:15px;align-items:center;padding:18px 0 14px;margin-bottom:8px;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px)}
+.topbar h1{font-size:clamp(22px,3vw,28px);margin:0;letter-spacing:-.03em}
+.top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.status{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:99px;font-size:12px;font-weight:700;background:var(--warnbg);color:var(--orange)}
+.status.ok{background:var(--okbg);color:var(--ok)}.status.bad{background:var(--badbg);color:var(--red)}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 4px color-mix(in srgb,currentColor 20%,transparent)}
+.status.ok .dot{animation:pulse 2.4s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 7px transparent}}
+.icon-btn{background:var(--panel);border:1px solid var(--line);width:38px;height:38px;padding:0;display:grid;place-items:center;font-size:16px}
+.muted{color:var(--muted)}.small{font-size:12px}
+.page{display:none}.page.active{display:block}
+.sectionhead{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap;margin:26px 0 12px}
+.sectionhead h2{margin:0;font-size:17px;letter-spacing:-.01em}.sectionhead p{margin:2px 0 0;color:var(--muted);font-size:12px}
+.grid{display:grid;gap:14px}.stats{grid-template-columns:repeat(4,minmax(0,1fr))}.split{grid-template-columns:repeat(2,minmax(0,1fr))}.sensor-grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow);min-width:0}
+.stat-top{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:12.5px;font-weight:650}
+.stat-icon{height:34px;width:34px;display:grid;place-items:center;border-radius:10px;background:var(--soft);font-size:16px}
+.stat-value{font-size:30px;font-weight:800;letter-spacing:-.04em;margin:10px 0 4px;font-variant-numeric:tabular-nums}
+.stat-value small,.reading small{font-size:13px;letter-spacing:0;color:var(--muted);font-weight:600}
+.delta{display:inline-block;font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--soft);color:var(--muted)}
+.delta.ok{background:var(--okbg);color:var(--ok)}.delta.warn{background:var(--warnbg);color:var(--orange)}
+.target-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.target{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.target .big{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}.target .big small{font-size:12px;color:var(--muted)}
+.chart-title h3{margin:0;font-size:14px}.chart-title p{margin:2px 0 12px;color:var(--muted);font-size:12px}
+.chartbox{height:260px;position:relative}.chartbox.sm{height:200px}
+.sensor{padding:16px}
+.sensor .row{display:flex;justify-content:space-between;align-items:center}
+.sensor .name{font-weight:750;font-size:13px}
+.badge{font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;background:var(--okbg);color:var(--ok)}
+.badge.warn{background:var(--warnbg);color:var(--orange)}.badge.bad{background:var(--badbg);color:var(--red)}.badge.none{background:var(--soft);color:var(--muted)}
+.reading{font-size:28px;font-weight:800;margin:12px 0 2px;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.range{position:relative;height:6px;border-radius:9px;background:var(--soft);margin:14px 0 5px}
+.range i{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;background:var(--c,var(--blue));border:2px solid var(--panel);transform:translate(-50%,-50%);box-shadow:0 0 0 1px var(--c,var(--blue))}
+.rlabels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.spark{height:34px;margin-top:10px}.spark svg{width:100%;height:100%}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{background:var(--panel);border:1px solid var(--line);color:var(--muted);padding:6px 12px;border-radius:99px;font-size:12px}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.filters{display:flex;gap:10px;align-items:end;flex-wrap:wrap}
+.field{display:grid;gap:5px}.field label{font-size:12px;font-weight:700;color:var(--muted)}
+.field input{border:1px solid var(--line);border-radius:9px;padding:9px 10px;background:var(--panel);min-width:200px}
+.tablewrap{overflow:auto;max-height:420px;padding:0}
+.table{width:100%;border-collapse:collapse;min-width:520px}
+.table th,.table td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);font-size:12.5px}
+.table th{position:sticky;top:0;color:var(--muted);font-weight:700;background:var(--panel)}
+.table td:last-child{font-variant-numeric:tabular-nums;font-weight:650}
+.empty{padding:34px;text-align:center;color:var(--muted)}
+.banner{display:none;margin:4px 0 0;padding:12px 14px;border-radius:12px;background:var(--badbg);color:var(--red);font-size:13px}
+.banner.show{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap}
+.banner button{background:var(--red);color:#fff;padding:6px 12px}
+.footer{margin-top:28px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.loading .stat-value,.loading .reading,.loading .chartbox{background:linear-gradient(90deg,var(--soft) 25%,var(--line) 50%,var(--soft) 75%);background-size:200% 100%;animation:sh 1.3s infinite;border-radius:8px;color:transparent}
+.loading .stat-value small,.loading .reading small{color:transparent}
+@keyframes sh{to{background-position:-200% 0}}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--nav);color:#fff;padding:11px 18px;border-radius:12px;opacity:0;pointer-events:none;transition:.25s;z-index:50;font-weight:600;max-width:90vw}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+dialog{border:0;border-radius:16px;padding:24px;max-width:400px;width:calc(100% - 30px);background:var(--panel);color:var(--ink);box-shadow:0 20px 70px #0006}
+dialog::backdrop{background:#0a1a2a88}
+dialog input{width:100%;padding:10px;border:1px solid var(--line);border-radius:9px;background:var(--panel)}
+@media(max-width:1100px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.split{grid-template-columns:1fr}}
+@media(max-width:720px){
+ .app{grid-template-columns:1fr}
+ .sidebar{position:fixed;inset:auto 0 0 0;height:auto;z-index:30;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px));flex-direction:row;border-top:1px solid #23415a}
+ .brand,.sidefoot{display:none}.sidebar>div{width:100%}.nav{grid-template-columns:repeat(3,1fr)}
+ .nav button{flex-direction:column;gap:2px;padding:8px 4px;font-size:11px;justify-content:center}.nav button.active{box-shadow:none}
+ main{padding:0 14px 96px}.topbar{padding-top:calc(14px + env(safe-area-inset-top,0px));align-items:flex-start;flex-direction:column;gap:8px}
+ .top-actions{width:100%}.target-row{grid-template-columns:1fr}.chartbox{height:230px}
+ .field{flex:1;min-width:140px}.field input{min-width:0;width:100%}
+}
+@media(max-width:420px){.stats{gap:9px}.card{padding:14px}.stat-value{font-size:24px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body class="loading">
+<div class="app">
+<aside class="sidebar">
+ <div class="brand"><div class="logo">F</div><div><strong>FMS</strong><small>Functional monitoring</small></div></div>
+ <div><nav class="nav" aria-label="Main">
+  <button data-page="dashboard"><span class="ico">▦</span>Dashboard</button>
+  <button data-page="live"><span class="ico">⌁</span>Live data</button>
+  <button data-page="report"><span class="ico">▤</span>Reports</button>
+ </nav></div>
+ <div class="sidefoot">Temperature in °C<br>Humidity in %RH</div>
+</aside>
+<main>
+ <header class="topbar">
+  <div><h1 id="pageTitle">Dashboard</h1><div class="muted small" id="pageSub"></div></div>
+  <div class="top-actions">
+   <div class="status" id="connectionStatus" role="status" aria-live="polite"><span class="dot"></span><span id="statusText">Connecting…</span></div>
+   <button class="icon-btn" id="refreshBtn" title="Refresh now" aria-label="Refresh now">⟳</button>
+   <button class="icon-btn" id="themeBtn" title="Switch theme" aria-label="Switch theme">☾</button>
+  </div>
+ </header>
+ <div class="banner" id="errorBanner"><span id="errorText"></span><button id="retryBtn">Try again</button></div>
+
+ <section class="page" id="dashboard">
+  <div class="sectionhead"><div><h2>Today</h2><p id="todayLabel"></p></div></div>
+  <div class="grid stats">
+   <div class="card"><div class="stat-top">Average temperature<span class="stat-icon">🌡️</span></div><div class="stat-value" id="dashTemp">— <small>°C</small></div><span class="delta" id="dashTempDelta">No data yet</span></div>
+   <div class="card"><div class="stat-top">Average humidity<span class="stat-icon">💧</span></div><div class="stat-value" id="dashHum">— <small>%RH</small></div><span class="delta" id="dashHumDelta">No data yet</span></div>
+   <div class="card"><div class="stat-top">Temperature sensors online<span class="stat-icon">◉</span></div><div class="stat-value" id="onTemp">—</div><div class="muted small">Reported in the last hour</div></div>
+   <div class="card"><div class="stat-top">Humidity sensors online<span class="stat-icon">◌</span></div><div class="stat-value" id="onHum">—</div><div class="muted small">Reported in the last hour</div></div>
+  </div>
+  <div class="sectionhead"><div><h2>Target values</h2><p>Ideal conditions. Today's averages are compared against these.</p></div><button class="ghost" id="editBestBtn">Edit targets</button></div>
+  <div class="target-row">
+   <div class="card target"><div><div class="muted small">Target temperature</div><div class="big" id="bestTempText">25.0 <small>°C</small></div></div><span class="stat-icon">🌡️</span></div>
+   <div class="card target"><div><div class="muted small">Target humidity</div><div class="big" id="bestHumText">65 <small>%RH</small></div></div><span class="stat-icon">💧</span></div>
+  </div>
+  <div class="sectionhead"><div><h2>Last 24 hours</h2><p>Dashed line shows your target.</p></div><button class="ghost" onclick="go('live')">See all sensors</button></div>
+  <div class="grid split">
+   <div class="card"><div class="chart-title"><h3>Temperature</h3><p>°C, all sensors</p></div><div class="chartbox"><canvas id="dashTempChart"></canvas></div></div>
+   <div class="card"><div class="chart-title"><h3>Humidity</h3><p>%RH, all sensors</p></div><div class="chartbox"><canvas id="dashHumChart"></canvas></div></div>
+  </div>
+ </section>
+
+ <section class="page" id="live">
+  <div class="sectionhead"><div><h2>Temperature sensors</h2><p>Latest reading, with today's low and high.</p></div></div>
+  <div class="grid sensor-grid" id="tempSensors"></div>
+  <div class="sectionhead"><div><h2>Humidity sensors</h2><p>Latest relative humidity readings.</p></div></div>
+  <div class="grid sensor-grid" id="humSensors"></div>
+  <div class="sectionhead"><div><h2>History</h2><p>One chart per sensor, up to the latest reading.</p></div>
+   <div class="chips" id="histChips"><button class="chip" data-h="6">6 hours</button><button class="chip on" data-h="24">24 hours</button><button class="chip" data-h="168">7 days</button><button class="chip" data-h="0">All</button></div></div>
+  <div class="grid split" id="history"></div>
+ </section>
+
+ <section class="page" id="report">
+  <div class="sectionhead"><div><h2>Report builder</h2><p>Pick a period to see averages, charts and readings.</p></div></div>
+  <div class="card">
+   <div class="chips" id="presetChips" style="margin-bottom:14px"><button class="chip" data-p="0">Today</button><button class="chip" data-p="24">Last 24 hours</button><button class="chip" data-p="168">Last 7 days</button><button class="chip" data-p="720">Last 30 days</button></div>
+   <div class="filters">
+    <div class="field"><label for="startDate">Start</label><input type="datetime-local" id="startDate"></div>
+    <div class="field"><label for="endDate">End</label><input type="datetime-local" id="endDate"></div>
+    <button class="primary" id="applyReport">Apply range</button>
+   </div>
+   <div id="reportMessage" class="muted small" style="margin-top:12px"></div>
+  </div>
+  <div class="grid stats" style="margin-top:14px">
+   <div class="card"><div class="stat-top">Average temperature<span class="stat-icon">🌡️</span></div><div class="stat-value" id="reportTemp">— <small>°C</small></div><div class="muted small" id="reportTempMM">No samples</div></div>
+   <div class="card"><div class="stat-top">Average humidity<span class="stat-icon">💧</span></div><div class="stat-value" id="reportHum">— <small>%RH</small></div><div class="muted small" id="reportHumMM">No samples</div></div>
+   <div class="card"><div class="stat-top">Temperature samples<span class="stat-icon">⌁</span></div><div class="stat-value" id="reportTempCount">0</div></div>
+   <div class="card"><div class="stat-top">Humidity samples<span class="stat-icon">⌁</span></div><div class="stat-value" id="reportHumCount">0</div></div>
+  </div>
+  <div class="grid split" style="margin-top:14px">
+   <div class="card"><div class="chart-title"><h3>Temperature</h3><p>°C in selected period</p></div><div class="chartbox"><canvas id="reportTempChart"></canvas></div></div>
+   <div class="card"><div class="chart-title"><h3>Humidity</h3><p>%RH in selected period</p></div><div class="chartbox"><canvas id="reportHumChart"></canvas></div></div>
+  </div>
+  <div class="sectionhead"><div><h2>Readings</h2><p id="tableNote">Newest first.</p></div><div class="chips"><button class="ghost" id="exportCsv">Download CSV</button><button class="primary" id="exportPdf">Download PDF</button></div></div>
+  <div class="card tablewrap"><table class="table"><thead><tr><th>Time</th><th>Sensor</th><th>Type</th><th>Reading</th></tr></thead><tbody id="reportTable"></tbody></table><div id="noData" class="empty" style="display:none">No readings in this period. Try a wider range.</div></div>
+ </section>
+ <div class="footer"><span>FMS Functional Monitoring System</span><span id="clock"></span></div>
+</main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<dialog id="bestDialog"><form method="dialog" id="bestForm"><h2 style="margin-top:0">Edit target values</h2><p class="muted small">Targets are kept while this page is open.</p>
+ <div class="field" style="margin-bottom:12px"><label for="bestTempInput">Target temperature (°C)</label><input id="bestTempInput" type="number" step="0.1" required></div>
+ <div class="field" style="margin-bottom:18px"><label for="bestHumInput">Target humidity (%RH)</label><input id="bestHumInput" type="number" min="0" max="100" step="1" required></div>
+ <div style="display:flex;justify-content:end;gap:8px"><button class="ghost" value="cancel" formnovalidate>Cancel</button><button class="primary" id="saveBest" value="default">Save targets</button></div></form></dialog>
+<script>
+const $=id=>document.getElementById(id);
+// Paste your deployed Google Apps Script Web App URL here (must end in /exec).
+const GOOGLE_SCRIPT_URL="https://script.google.com/macros/s/AKfycbwKJeC6KoEwhfk92yTYrn70HrN-jQJ3PEtqzWAtg31rF9Kc4tGMRk0t5xAyqWXVCDsg/exec";
+const REFRESH_INTERVAL_MS=60000, ONLINE_MIN=60, LIVE_MIN=15, TOL={Temperature:1,Humidity:5};
+const sensorNames=[
+ {id:'TEMP_1',type:'Temperature',unit:'°C',key:'temp1'},{id:'TEMP_2',type:'Temperature',unit:'°C',key:'temp2'},
+ {id:'TEMP_3',type:'Temperature',unit:'°C',key:'temp3'},{id:'TEMP_4',type:'Temperature',unit:'°C',key:'temp4'},
+ {id:'TEMP_5',type:'Temperature',unit:'°C',key:'temp5'},{id:'HUM_1',type:'Humidity',unit:'%RH',key:'hum1'},{id:'HUM_2',type:'Humidity',unit:'%RH',key:'hum2'}];
+const PALETTE=['#2476d2','#0f9d91','#e08a1e','#8b5cf6','#e5484d'];
+const colorOf=id=>PALETTE[sensorNames.findIndex(s=>s.id===id)%PALETTE.length];
+let records=[],charts={},best={Temperature:25,Humidity:65},histHours=24,loaded=false,busy=false;
+const fmtTime=d=>new Date(d).toLocaleString([],{month:'short',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+const localInput=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,16);
+const average=a=>a.length?a.reduce((s,r)=>s+r.value,0)/a.length:null;
+const val=(v,u)=>(v===null?'—':v.toFixed(1))+' <small>'+u+'</small>';
+const minmax=a=>a.length?[Math.min(...a.map(r=>r.value)),Math.max(...a.map(r=>r.value))]:null;
+const sameDay=(a,b)=>a.toDateString()===b.toDateString();
+let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600)}
+
+/* theme */
+function setTheme(t){document.documentElement.dataset.theme=t;$('themeBtn').textContent=t==='dark'?'☀':'☾';try{localStorage.setItem('fms-theme',t)}catch(e){}if(loaded)renderAll()}
+let saved=null;try{saved=localStorage.getItem('fms-theme')}catch(e){}
+setTheme(saved||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
+$('themeBtn').onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+
+/* charts */
+function chart(id,labels,datasets,target){
+ if(charts[id])charts[id].destroy();const c=$(id);if(!c)return;
+ const cs=getComputedStyle(document.documentElement),tick=cs.getPropertyValue('--tick').trim(),grid=cs.getPropertyValue('--grid').trim();
+ const ds=datasets.map(d=>({...d,tension:.3,pointRadius:0,pointHoverRadius:4,borderWidth:2,spanGaps:true,fill:false}));
+ if(target!=null&&labels.length)ds.push({label:'Target',data:labels.map(()=>target),borderColor:'#94a3b8',borderDash:[6,4],borderWidth:1.5,pointRadius:0,fill:false});
+ charts[id]=new Chart(c,{type:'line',data:{labels,datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:ds.length>1,position:'bottom',labels:{boxWidth:9,usePointStyle:true,color:tick,font:{size:11}}}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:6,color:tick,font:{size:10},maxRotation:0}},y:{grid:{color:grid},ticks:{color:tick,font:{size:10}}}}}});
+ if(!labels.length){const x=c.getContext('2d');x.fillStyle=tick;x.textAlign='center';x.font='13px sans-serif';x.fillText('No readings in this period',c.width/2,c.height/2)}
+}
+function seriesFor(type,subset){
+ const list=subset.filter(r=>r.type===type),times=[...new Set(list.map(r=>+r.timestamp))].sort((a,b)=>a-b),by={};
+ list.forEach(r=>(by[r.sensor]=by[r.sensor]||{})[+r.timestamp]=r.value);
+ return{labels:times.map(fmtTime),datasets:sensorNames.filter(s=>s.type===type&&by[s.id]).map(s=>({label:s.id.replace('_',' '),sid:s.id,data:times.map(t=>by[s.id][t]??null),borderColor:colorOf(s.id)}))};
+}
+
+/* data */
+function setConnection(state,msg){const el=$('connectionStatus');el.className='status '+state;$('statusText').textContent=msg}
+function parseSheetDate(dv,tv){
+ if(dv instanceof Date){const d=new Date(dv);if(tv){const t=String(tv).split(':');d.setHours(+t[0]||0,+t[1]||0,+t[2]||0,0)}return d}
+ const ds=String(dv||'').trim(),ts=String(tv||'00:00:00').trim(),m=ds.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+ if(m){const t=ts.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?/);return new Date(+m[1],+m[2]-1,+m[3],t?+t[1]:0,t?+t[2]:0,t&&t[3]?+t[3]:0)}
+ return new Date(ds+' '+ts);
+}
+function normaliseRows(p){
+ const rows=Array.isArray(p)?p:(p.data||p.rows||[]);
+ return rows.map(row=>{
+  const o=Array.isArray(row)?{date:row[0],time:row[1],temp1:row[2],temp2:row[3],temp3:row[4],temp4:row[5],hum1:row[6],temp5:row[7],hum2:row[8]}:row;
+  const ts=parseSheetDate(o.date||o.Date,o.time||o.Time);if(!ts||isNaN(ts.getTime()))return[];
+  const out=[];sensorNames.forEach(s=>{const raw=o[s.key]!==undefined?o[s.key]:o[s.key.toUpperCase()];
+   if(raw!==''&&raw!==null&&raw!==undefined&&Number.isFinite(Number(raw)))out.push({timestamp:new Date(ts),sensor:s.id,type:s.type,value:Number(raw),unit:s.unit})});
+  return out}).flat();
+}
+async function loadData(manual=false){
+ if(busy)return;busy=true;$('refreshBtn').style.opacity=.5;
+ if(!GOOGLE_SCRIPT_URL||GOOGLE_SCRIPT_URL.includes('PASTE_YOUR')){busy=false;return showError('Add your Google Apps Script Web App URL in GOOGLE_SCRIPT_URL.')}
+ try{
+  const r=await fetch(GOOGLE_SCRIPT_URL+(GOOGLE_SCRIPT_URL.includes('?')?'&':'?')+'action=read&t='+Date.now(),{cache:'no-store'});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const p=await r.json();if(p.success===false)throw new Error(p.message||'Apps Script returned an error');
+  records=normaliseRows(p).sort((a,b)=>a.timestamp-b.timestamp);loaded=true;
+  $('errorBanner').classList.remove('show');
+  setConnection('ok','Connected');$('clock').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  if(manual)toast('Loaded '+records.length+' readings');
+ }catch(e){console.error(e);showError('Could not load data ('+e.message+'). Check the Apps Script deployment and access settings.')}
+ document.body.classList.remove('loading');busy=false;$('refreshBtn').style.opacity=1;renderAll();
+}
+function showError(m){setConnection('bad','Offline');$('errorText').textContent=m;$('errorBanner').classList.add('show');document.body.classList.remove('loading')}
+
+/* helpers */
+const latestOf=id=>{for(let i=records.length-1;i>=0;i--)if(records[i].sensor===id)return records[i]};
+const ageMin=r=>(Date.now()-r.timestamp)/6e4;
+const ref=()=>records.length?records[records.length-1].timestamp:new Date();
+function deltaPill(el,avg,type,u){
+ if(avg===null){el.textContent='No readings today';el.className='delta';return}
+ const d=avg-best[type];if(Math.abs(d)<=TOL[type]){el.textContent='On target';el.className='delta ok'}
+ else{el.textContent=Math.abs(d).toFixed(1)+' '+u+(d>0?' above':' below')+' target';el.className='delta warn'}
+}
+
+/* dashboard */
+function updateDashboard(){
+ const today=new Date(),todays=records.filter(r=>sameDay(r.timestamp,today)),T=todays.filter(r=>r.type==='Temperature'),H=todays.filter(r=>r.type==='Humidity');
+ $('todayLabel').textContent=today.toLocaleDateString([],{weekday:'long',month:'long',day:'numeric'});
+ const aT=average(T),aH=average(H);
+ $('dashTemp').innerHTML=val(aT,'°C');$('dashHum').innerHTML=val(aH,'%RH');
+ deltaPill($('dashTempDelta'),aT,'Temperature','°C');deltaPill($('dashHumDelta'),aH,'Humidity','%RH');
+ const on=t=>{const ss=sensorNames.filter(s=>s.type===t);return ss.filter(s=>{const r=latestOf(s.id);return r&&ageMin(r)<=ONLINE_MIN}).length+' of '+ss.length};
+ $('onTemp').textContent=on('Temperature');$('onHum').textContent=on('Humidity');
+ $('bestTempText').innerHTML=best.Temperature+' <small>°C</small>';$('bestHumText').innerHTML=best.Humidity+' <small>%RH</small>';
+ const since=new Date(ref()-864e5),sub=records.filter(r=>r.timestamp>=since),a=seriesFor('Temperature',sub),b=seriesFor('Humidity',sub);
+ chart('dashTempChart',a.labels,a.datasets,best.Temperature);chart('dashHumChart',b.labels,b.datasets,best.Humidity);
+}
+
+/* live */
+function sensorCard(s){
+ const r=latestOf(s.id),col=colorOf(s.id);
+ let badge='<span class="badge none">No data</span>',body='<div class="reading">— <small>'+s.unit+'</small></div><div class="muted small">No readings available</div>';
+ if(r){
+  const m=ageMin(r),cls=m<=LIVE_MIN?'':m<=ONLINE_MIN?'warn':'bad',txt=m<=LIVE_MIN?'Live':m<=ONLINE_MIN?'Delayed':'Offline';
+  badge='<span class="badge '+cls+'">'+txt+'</span>';
+  const day=records.filter(x=>x.sensor===s.id&&sameDay(x.timestamp,r.timestamp)),mm=minmax(day),spark=records.filter(x=>x.sensor===s.id).slice(-24),sm=minmax(spark),span=(sm[1]-sm[0])||1;
+  const pct=mm[1]===mm[0]?50:(r.value-mm[0])/(mm[1]-mm[0])*100,w=220/Math.max(spark.length-1,1);
+  body='<div class="reading">'+r.value+' <small>'+s.unit+'</small></div><div class="muted small">Updated '+fmtTime(r.timestamp)+'</div>'
+   +'<div class="range" style="--c:'+col+'" aria-label="Position between today\'s low and high"><i style="left:'+pct+'%"></i></div><div class="rlabels"><span>Low '+mm[0]+'</span><span>High '+mm[1]+'</span></div>'
+   +'<div class="spark"><svg viewBox="0 0 220 34" preserveAspectRatio="none"><polyline fill="none" stroke="'+col+'" stroke-width="2" vector-effect="non-scaling-stroke" points="'+spark.map((x,i)=>(i*w).toFixed(1)+','+(30-(x.value-sm[0])/span*26).toFixed(1)).join(' ')+'"/></svg></div>';
+ }
+ return '<div class="card sensor"><div class="row"><span class="name">'+s.id.replace('_',' ')+'</span>'+badge+'</div>'+body+'</div>';
+}
+function renderSensors(){
+ $('tempSensors').innerHTML=sensorNames.filter(s=>s.type==='Temperature').map(sensorCard).join('');
+ $('humSensors').innerHTML=sensorNames.filter(s=>s.type==='Humidity').map(sensorCard).join('');
+ $('history').innerHTML=sensorNames.map(s=>'<div class="card"><div class="chart-title"><h3>'+s.id.replace('_',' ')+'</h3><p>'+s.type+' in '+s.unit+'</p></div><div class="chartbox sm"><canvas id="hist_'+s.id+'"></canvas></div></div>').join('');
+ const since=histHours?new Date(ref()-histHours*36e5):new Date(0),sub=records.filter(r=>r.timestamp>=since);
+ sensorNames.forEach(s=>{const a=seriesFor(s.type,sub),d=a.datasets.find(x=>x.sid===s.id);chart('hist_'+s.id,d?a.labels:[],d?[d]:[],null)});
+}
+$('histChips').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;histHours=+b.dataset.h;document.querySelectorAll('#histChips .chip').forEach(c=>c.classList.toggle('on',c===b));renderSensors()};
+
+/* report */
+function setPreset(h){const end=new Date(),start=new Date(end);if(h===0)start.setHours(0,0,0,0);else start.setTime(end-h*36e5);$('startDate').value=localInput(start);$('endDate').value=localInput(end);applyReport();
+ document.querySelectorAll('#presetChips .chip').forEach(c=>c.classList.toggle('on',+c.dataset.p===h))}
+function applyReport(){
+ const start=new Date($('startDate').value),end=new Date($('endDate').value),msg=$('reportMessage');
+ if(!$('startDate').value||!$('endDate').value||isNaN(start)||isNaN(end)||end<=start){msg.textContent='Choose a start that is earlier than the end.';msg.style.color='var(--red)';return false}
+ const sub=records.filter(r=>r.timestamp>=start&&r.timestamp<=end),T=sub.filter(r=>r.type==='Temperature'),H=sub.filter(r=>r.type==='Humidity');
+ msg.textContent=sub.length+' readings from '+fmtTime(start)+' to '+fmtTime(end)+'.';msg.style.color='var(--muted)';
+ $('reportTemp').innerHTML=val(average(T),'°C');$('reportHum').innerHTML=val(average(H),'%RH');
+ const mmt=(a,u)=>{const m=minmax(a);return m?'Low '+m[0]+' '+u+', high '+m[1]+' '+u:'No samples'};
+ $('reportTempMM').textContent=mmt(T,'°C');$('reportHumMM').textContent=mmt(H,'%RH');
+ $('reportTempCount').textContent=T.length;$('reportHumCount').textContent=H.length;
+ const a=seriesFor('Temperature',sub),b=seriesFor('Humidity',sub);chart('reportTempChart',a.labels,a.datasets,null);chart('reportHumChart',b.labels,b.datasets,null);
+ const sorted=sub.slice().sort((x,y)=>y.timestamp-x.timestamp);
+ $('reportTable').innerHTML=sorted.slice(0,150).map(r=>'<tr><td>'+r.timestamp.toLocaleString()+'</td><td>'+r.sensor.replace('_',' ')+'</td><td>'+r.type+'</td><td>'+r.value+' '+r.unit+'</td></tr>').join('');
+ $('tableNote').textContent=sub.length>150?'Newest 150 of '+sub.length+' shown. Downloads include all readings.':'Newest first.';
+ $('noData').style.display=sub.length?'none':'block';$('reportTable').parentElement.style.display=sub.length?'table':'none';
+ window.currentReport={start,end,subset:sub,temps:T,hums:H};return true;
+}
+$('presetChips').onclick=e=>{const b=e.target.closest('.chip');if(b)setPreset(+b.dataset.p)};
+function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function exportCsv(){const r=window.currentReport;if(!r||!r.subset.length)return toast('Nothing to download for this period');
+ const rows=['Timestamp,Sensor,Type,Value,Unit'].concat(r.subset.map(x=>[localInput(x.timestamp).replace('T',' '),x.sensor,x.type,x.value,x.unit].join(',')));
+ download(new Blob([rows.join('\n')],{type:'text/csv'}),'FMS-readings.csv');toast('CSV downloaded')}
+function exportPdf(){const r=window.currentReport;if(!r)return;
+ const{jsPDF}=window.jspdf,doc=new jsPDF(),avg=(a,u)=>average(a)===null?'No data':average(a).toFixed(1)+' '+u;
+ doc.setFontSize(19);doc.text('FMS - Monitoring Report',14,18);doc.setFontSize(10);
+ doc.text('Period: '+r.start.toLocaleString()+' - '+r.end.toLocaleString(),14,28);doc.text('Average temperature: '+avg(r.temps,'°C'),14,38);doc.text('Average humidity: '+avg(r.hums,'%RH'),14,46);
+ doc.text('Temperature samples: '+r.temps.length+' | Humidity samples: '+r.hums.length,14,54);
+ let y=66;doc.setFontSize(9);doc.text('Timestamp',14,y);doc.text('Sensor',75,y);doc.text('Type',115,y);doc.text('Value',155,y);y+=6;
+ for(const row of r.subset.slice().sort((a,b)=>a.timestamp-b.timestamp)){if(y>280){doc.addPage();y=18}doc.text(row.timestamp.toLocaleString().slice(0,24),14,y);doc.text(row.sensor,75,y);doc.text(row.type,115,y);doc.text(row.value+' '+row.unit,155,y);y+=5}
+ doc.save('FMS-monitoring-report.pdf');toast('PDF downloaded')}
+
+/* navigation */
+const titles={dashboard:['Dashboard','Conditions across all sensors today.'],live:['Live data','Current readings and history by sensor.'],report:['Reports','Filter readings, check averages and download.']};
+function renderAll(){updateDashboard();if($('live').classList.contains('active'))renderSensors();if($('report').classList.contains('active')&&window.currentReport)applyReport()}
+function go(page){
+ if(!titles[page])page='dashboard';
+ document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id===page));
+ document.querySelectorAll('.nav button').forEach(b=>{const on=b.dataset.page===page;b.classList.toggle('active',on);on?b.setAttribute('aria-current','page'):b.removeAttribute('aria-current')});
+ $('pageTitle').textContent=titles[page][0];$('pageSub').textContent=titles[page][1];history.replaceState(null,'','#'+page);scrollTo(0,0);
+ if(page==='dashboard')updateDashboard();if(page==='live')renderSensors();if(page==='report'&&!window.currentReport)setPreset(0);else if(page==='report')applyReport();
+}
+document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.page));
+$('editBestBtn').onclick=()=>{$('bestTempInput').value=best.Temperature;$('bestHumInput').value=best.Humidity;$('bestDialog').showModal()};
+$('bestForm').addEventListener('submit',e=>{if(e.submitter&&e.submitter.id==='saveBest'){e.preventDefault();best.Temperature=Number($('bestTempInput').value);best.Humidity=Number($('bestHumInput').value);updateDashboard();$('bestDialog').close();toast('Targets saved')}});
+$('applyReport').onclick=()=>{document.querySelectorAll('#presetChips .chip').forEach(c=>c.classList.remove('on'));applyReport()};
+$('exportPdf').onclick=()=>{if(applyReport())exportPdf()};$('exportCsv').onclick=()=>{if(applyReport())exportCsv()};
+$('refreshBtn').onclick=()=>loadData(true);$('retryBtn').onclick=()=>loadData(true);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)loadData()});
+go(location.hash.slice(1));loadData();setInterval(()=>{if(!document.hidden)loadData()},REFRESH_INTERVAL_MS);
+</script>
+</body>
+</html>
